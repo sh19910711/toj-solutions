@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
+#include <list>
 #include <set>
 #include <map>
 #include <stack>
@@ -204,7 +205,7 @@ namespace solution {
 namespace solution {
   // constant vars
   const int SIZE = 100000 + 11;
-  const int TREE_SIZE = 4 * SIZE + 11;
+  const int TREE_SIZE = 3 * SIZE + 11;
   
 }
 
@@ -252,6 +253,10 @@ namespace solution {
       return res;
     }
 
+    Node query( const int& l, const int& r ) {
+      return range_query(1, N, 2 * N, N + l, N + r);
+    }
+
     Node query_all() {
       return range_query(1, N, 2 * N, N, 2 * N);
     }
@@ -287,7 +292,7 @@ namespace solution {
   typedef storage::Vector<Query, SIZE>::Type Queries;
   typedef storage::Vector<Int, SIZE>::Type QueryResults;
 
-  typedef std::vector <int> Positions;
+  typedef std::list <int> Positions;
   typedef std::map <Int, Positions> ValuePositions;
   
   // TODO: 分ける（InputStorage, DataStorage, OutputStorage）
@@ -315,40 +320,32 @@ namespace solution {
       s.left_most = 0;
       s.set_num = 0;
       s.pos.clear();
-      s.tree = init_tree();
-      s.results = proc_queries(s.Q, s.queries, s.tree, s.left_most, s.pos, s.set_num);
+      s.tree.init(SIZE);
+      proc_queries(s.Q, s.queries);
     }
     
   protected:
-    static Tree init_tree() {
-      Tree tree;
-      tree.init(SIZE);
-      return tree;
-    }
-    
-    static QueryResults proc_queries( const int& queries_num, const Queries& queries, Tree& tree, int& left_most, ValuePositions& pos, int& set_num ) {
-      QueryResults res;
+    static void proc_queries( const int& queries_num, const Queries& queries) {
       for ( int i = 0; i < queries_num; ++ i ) {
-        res[i] = proc_query(queries[i], tree, left_most, pos, set_num);
+        global_storages.results[i] = proc_query(queries[i]);
       }
-      return res;
     }
     
-    static Int proc_query( const Query& query, Tree& tree, int& left_most, ValuePositions& pos, int& set_num ) {
+    static Int proc_query( const Query& query ) {
       if ( query.type == "+" ) {
         Node node = {query.value, query.value};
-        tree.update(left_most, node);
-        pos[query.value].push_back(left_most);
-        left_most ++;
-        set_num ++;
+        global_storages.tree.update(global_storages.left_most, node);
+        global_storages.pos[query.value].push_back(global_storages.left_most);
+        global_storages.left_most ++;
+        global_storages.set_num ++;
       } else {
-        Positions& list = pos[query.value];
+        Positions& list = global_storages.pos[query.value];
         int last_pos = list.back();
         list.pop_back();
-        tree.update(last_pos, NODE_IDENTITY);
-        set_num --;
+        global_storages.tree.update(last_pos, NODE_IDENTITY);
+        global_storages.set_num --;
       }
-      return set_num == 0 ? 1 : tree.query_all().gcd_value;
+      return global_storages.set_num == 0 ? 1 : global_storages.tree.query(0, global_storages.left_most).gcd_value;
     }
     
   };
