@@ -288,7 +288,7 @@ namespace solution {
   typedef storage::Vector<Int, SIZE>::Type QueryResults;
 
   typedef std::vector <int> Positions;
-  typedef std::map <int, Positions> ValuePositions;
+  typedef std::map <Int, Positions> ValuePositions;
   
   // TODO: 分ける（InputStorage, DataStorage, OutputStorage）
   class Storages {
@@ -297,6 +297,7 @@ namespace solution {
     Queries queries;
     
     int left_most;
+    int set_num;
     Tree tree;
     ValuePositions pos;
     
@@ -312,9 +313,10 @@ namespace solution {
   public:
     void solve( Storages& s ) {
       s.left_most = 0;
+      s.set_num = 0;
       s.pos.clear();
       s.tree = init_tree();
-      s.results = proc_queries(s.Q, s.queries, s.tree, s.left_most, s.pos);
+      s.results = proc_queries(s.Q, s.queries, s.tree, s.left_most, s.pos, s.set_num);
     }
     
   protected:
@@ -324,27 +326,29 @@ namespace solution {
       return tree;
     }
     
-    static QueryResults proc_queries( const int& queries_num, const Queries& queries, Tree& tree, int& left_most, ValuePositions& pos ) {
+    static QueryResults proc_queries( const int& queries_num, const Queries& queries, Tree& tree, int& left_most, ValuePositions& pos, int& set_num ) {
       QueryResults res;
       for ( int i = 0; i < queries_num; ++ i ) {
-        res[i] = proc_query(queries[i], tree, left_most, pos);
+        res[i] = proc_query(queries[i], tree, left_most, pos, set_num);
       }
       return res;
     }
     
-    static Int proc_query( const Query& query, Tree& tree, int& left_most, ValuePositions& pos ) {
+    static Int proc_query( const Query& query, Tree& tree, int& left_most, ValuePositions& pos, int& set_num ) {
       if ( query.type == "+" ) {
         Node node = {query.value, query.value};
         tree.update(left_most, node);
         pos[query.value].push_back(left_most);
         left_most ++;
+        set_num ++;
       } else {
         Positions& list = pos[query.value];
         int last_pos = list.back();
         list.pop_back();
         tree.update(last_pos, NODE_IDENTITY);
+        set_num --;
       }
-      return tree.query_all().gcd_value;
+      return set_num == 0 ? 1 : tree.query_all().gcd_value;
     }
     
   };
